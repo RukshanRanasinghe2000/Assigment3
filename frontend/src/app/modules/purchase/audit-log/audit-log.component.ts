@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../core/services/api.service';
 import { AuditLog } from '../../../core/models/purchase-bill.model';
@@ -14,13 +14,17 @@ export class AuditLogComponent implements OnInit {
   loading = false;
   expanded: number | null = null;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loading = true;
     this.api.getAuditLogs().subscribe({
-      next: data => { this.logs = data; this.loading = false; },
-      error: () => this.loading = false
+      next: data => {
+        this.logs = Array.isArray(data) ? data : (data as any)?.value ?? [];
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.loading = false; this.cdr.detectChanges(); }
     });
   }
 

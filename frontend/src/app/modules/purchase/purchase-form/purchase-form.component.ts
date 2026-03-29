@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -8,7 +8,6 @@ import { PdfService } from '../../../core/services/pdf.service';
 import { Item } from '../../../core/models/item.model';
 import { Location } from '../../../core/models/location.model';
 import { PurchaseBill } from '../../../core/models/purchase-bill.model';
-import { TotalAmountPipe } from '../../../shared/pipes/total-amount.pipe';
 
 @Component({
   selector: 'app-purchase-form',
@@ -37,7 +36,8 @@ export class PurchaseFormComponent implements OnInit {
     private offline: OfflineService,
     private pdf: PdfService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -65,8 +65,14 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   private loadMasterData(): void {
-    this.api.getItems().subscribe(data => this.items = data);
-    this.api.getLocations().subscribe(data => this.locations = data);
+    this.api.getItems().subscribe(data => {
+      this.items = Array.isArray(data) ? data : (data as any)?.value ?? [];
+      this.cdr.detectChanges();
+    });
+    this.api.getLocations().subscribe(data => {
+      this.locations = Array.isArray(data) ? data : (data as any)?.value ?? [];
+      this.cdr.detectChanges();
+    });
   }
 
   private listenOnlineStatus(): void {
@@ -89,12 +95,20 @@ export class PurchaseFormComponent implements OnInit {
         });
         bill.items.forEach((item, i) => {
           this.addRow();
-          this.rowsArray.at(i).patchValue(item);
+          this.rowsArray.at(i).patchValue({
+            ...item,
+            itemSearch: item.itemName ?? ''
+          });
           this.filteredItems[i] = this.items;
         });
         this.loading = false;
+        this.cdr.detectChanges();
       },
-      error: () => { this.error = 'Failed to load bill.'; this.loading = false; }
+      error: () => {
+        this.error = 'Failed to load bill.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -114,7 +128,6 @@ export class PurchaseFormComponent implements OnInit {
       totalCost: [{ value: 0, disabled: true }],
       totalSelling: [{ value: 0, disabled: true }]
     });
-
     row.valueChanges.subscribe(() => this.recalcRow(row));
     return row;
   }
@@ -130,16 +143,17 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   onItemSearch(i: number, value: string): void {
-    // Clear itemId when user types again (forces re-selection)
     this.rowsArray.at(i).patchValue({ itemId: null }, { emitEvent: false });
     this.filteredItems[i] = value
       ? this.items.filter(item => item.name.toLowerCase().includes(value.toLowerCase()))
       : [];
+    this.cdr.detectChanges();
   }
 
   selectItem(i: number, item: Item): void {
     this.rowsArray.at(i).patchValue({ itemId: item.id, itemSearch: item.name }, { emitEvent: false });
     this.filteredItems[i] = [];
+    this.cdr.detectChanges();
   }
 
   private recalcRow(row: AbstractControl): void {
@@ -187,11 +201,9 @@ export class PurchaseFormComponent implements OnInit {
 
     if (this.form.invalid) {
       const errors: string[] = [];
-
       if (this.form.get('billNumber')?.invalid) errors.push('Bill Number');
       if (this.form.get('billDate')?.invalid) errors.push('Bill Date');
       if (this.form.get('supplierName')?.invalid) errors.push('Supplier Name');
-
       this.rowsArray.controls.forEach((r, i) => {
         const rowNum = `Row ${i + 1}`;
         if (!r.get('itemId')?.value) errors.push(`${rowNum}: Item`);
@@ -200,17 +212,14 @@ export class PurchaseFormComponent implements OnInit {
         if (r.get('price')?.invalid) errors.push(`${rowNum}: Price`);
         if (r.get('quantity')?.invalid) errors.push(`${rowNum}: Quantity`);
       });
-
       this.error = errors.length
         ? `Please fill in the following required fields: ${errors.join(', ')}.`
         : 'Please fill in all required fields.';
-
-      // Switch to header tab if header fields are invalid
       const headerInvalid = this.form.get('billNumber')?.invalid
         || this.form.get('billDate')?.invalid
         || this.form.get('supplierName')?.invalid;
       if (headerInvalid) this.activeTab = 'header';
-
+      this.cdr.detectChanges();
       return;
     }
 
@@ -220,6 +229,7 @@ export class PurchaseFormComponent implements OnInit {
     if (!this.isOnline) {
       this.offline.saveBillOffline(payload).then(() => {
         this.success = 'Saved offline. Will sync when back online.';
+        this.cdr.detectChanges();
       });
       return;
     }
@@ -233,15 +243,19 @@ export class PurchaseFormComponent implements OnInit {
       next: () => {
         this.success = `Bill ${this.isEdit ? 'updated' : 'created'} successfully.`;
         this.saving = false;
+        this.cdr.detectChanges();
         setTimeout(() => this.router.navigate(['/purchase']), 1200);
       },
-      error: () => { this.error = 'Save failed.'; this.saving = false; }
+      error: () => {
+        this.error = 'Save failed.';
+        this.saving = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   exportPdf(): void {
     const payload = this.buildPayload();
-    // Enrich names for PDF
     payload.items = payload.items.map(i => ({
       ...i,
       itemName: this.items.find(x => x.id === i.itemId)?.name ?? '',
