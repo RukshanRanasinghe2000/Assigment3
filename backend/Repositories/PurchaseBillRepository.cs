@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PurchaseManagement.API.Data;
 using PurchaseManagement.API.Entities;
+using System.Linq;
 
 namespace PurchaseManagement.API.Repositories;
 
@@ -31,7 +32,19 @@ public class PurchaseBillRepository : IPurchaseBillRepository
 
     public async Task<PurchaseBill> UpdateAsync(PurchaseBill bill)
     {
-        _db.PurchaseBills.Update(bill);
+        // Remove old items first to avoid EF tracking conflicts
+        var oldItems = await _db.PurchaseBillItems
+            .Where(i => i.PurchaseBillId == bill.Id)
+            .ToListAsync();
+        _db.PurchaseBillItems.RemoveRange(oldItems);
+
+        _db.Entry(bill).State = EntityState.Modified;
+        foreach (var item in bill.Items)
+        {
+            item.Id = 0; // ensure new insert
+            _db.PurchaseBillItems.Add(item);
+        }
+
         await _db.SaveChangesAsync();
         return bill;
     }
