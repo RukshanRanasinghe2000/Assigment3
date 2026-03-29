@@ -1,0 +1,136 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>{{ isEdit ? 'Edit' : 'New' }} Purchase Bill</h2>
+      <span class="online-badge" [class.offline]="!isOnline">
+        {{ isOnline ? '● Online' : '○ Offline' }}
+      </span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="exportPdf()" type="button">Export PDF</button>
+      <button class="btn btn-primary" (click)="save()" [disabled]="saving" type="button">
+        {{ saving ? 'Saving...' : (isEdit ? 'Update' : 'Save') }}
+      </button>
+      <a routerLink="/purchase" class="btn btn-ghost">Cancel</a>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+  <div *ngIf="loading" class="loading">Loading...</div>
+
+  <div class="bill-layout" *ngIf="!loading">
+    <!-- Main content -->
+    <div class="bill-main">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab" [class.active]="activeTab==='header'" (click)="activeTab='header'" type="button">Header</button>
+        <button class="tab" [class.active]="activeTab==='details'" (click)="activeTab='details'" type="button">Details</button>
+      </div>
+
+      <form [formGroup]="form">
+        <!-- Header Tab -->
+        <div *ngIf="activeTab==='header'" class="tab-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Bill Number *</label>
+              <input formControlName="billNumber" class="form-control" placeholder="e.g. PB-001" />
+              <span class="field-error" *ngIf="isInvalid('billNumber')">Required</span>
+            </div>
+            <div class="form-group">
+              <label>Bill Date *</label>
+              <input type="date" formControlName="billDate" class="form-control" />
+              <span class="field-error" *ngIf="isInvalid('billDate')">Required</span>
+            </div>
+            <div class="form-group">
+              <label>Supplier Name *</label>
+              <input formControlName="supplierName" class="form-control" placeholder="Supplier name" />
+              <span class="field-error" *ngIf="isInvalid('supplierName')">Required</span>
+            </div>
+            <div class="form-group full-width">
+              <label>Notes</label>
+              <textarea formControlName="notes" class="form-control" rows="3" placeholder="Optional notes"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details Tab -->
+        <div *ngIf="activeTab==='details'" class="tab-content">
+          <!-- Row entry -->
+          <div formArrayName="items">
+            <div class="items-header-row">
+              <span>Item</span>
+              <span>Batch/Location</span>
+              <span>Cost</span>
+              <span>Price</span>
+              <span>Qty</span>
+              <span>Disc%</span>
+              <span>Total Cost</span>
+              <span>Total Selling</span>
+              <span></span>
+            </div>
+
+            <div *ngFor="let row of rowsArray.controls; let i = index"
+                 [formGroupName]="i" class="item-row">
+              <!-- Item autocomplete -->
+              <div class="autocomplete-wrap">
+                <input formControlName="itemSearch"
+                       class="form-control"
+                       placeholder="Search item..."
+                       (input)="onItemSearch(i, $any($event.target).value)"
+                       autocomplete="off" />
+                <div class="autocomplete-dropdown" *ngIf="(filteredItems[i]?.length ?? 0) > 0 && row.get('itemSearch')?.value">
+                  <div *ngFor="let item of filteredItems[i]"
+                       class="autocomplete-item"
+                       (click)="selectItem(i, item)">
+                    {{ item.name }}
+                  </div>
+                </div>
+              </div>
+
+              <select formControlName="locationId" class="form-control">
+                <option [ngValue]="null" disabled>Select...</option>
+                <option *ngFor="let loc of locations" [ngValue]="loc.id">{{ loc.name }}</option>
+              </select>
+
+              <input type="number" formControlName="cost" class="form-control" min="0" step="0.01" />
+              <input type="number" formControlName="price" class="form-control" min="0" step="0.01" />
+              <input type="number" formControlName="quantity" class="form-control" min="1" />
+              <input type="number" formControlName="discountPercent" class="form-control" min="0" max="100" step="0.01" />
+              <input formControlName="totalCost" class="form-control readonly" readonly />
+              <input formControlName="totalSelling" class="form-control readonly" readonly />
+
+              <button type="button" class="btn btn-danger btn-sm" (click)="removeRow(i)"
+                      [disabled]="rowsArray.length === 1">✕</button>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-outline btn-sm add-row-btn" (click)="addRow()">+ Add Row</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Summary panel -->
+    <div class="summary-panel">
+      <h3>Summary</h3>
+      <div class="summary-section">
+        <div class="summary-label">Item Summary</div>
+        <div class="summary-row">
+          <span>Total Items</span>
+          <span>{{ summary.totalItems }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Total Quantity</span>
+          <span>{{ summary.totalQty }}</span>
+        </div>
+      </div>
+      <div class="summary-section">
+        <div class="summary-label">Financial Summary</div>
+        <div class="summary-row total">
+          <span>Total Amount</span>
+          <span>{{ summary.totalAmount.toFixed(2) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

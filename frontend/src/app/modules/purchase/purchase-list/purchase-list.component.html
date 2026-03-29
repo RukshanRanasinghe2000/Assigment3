@@ -1,0 +1,38 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Purchase Bills</h2>
+    <a routerLink="/purchase/new" class="btn btn-primary">+ New Bill</a>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading...</div>
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+  <table *ngIf="!loading && bills.length > 0" class="erp-table">
+    <thead>
+      <tr>
+        <th>Bill No</th>
+        <th>Date</th>
+        <th>Supplier</th>
+        <th>Items</th>
+        <th>Total Amount</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let bill of bills">
+        <td>{{ bill.billNumber }}</td>
+        <td>{{ bill.billDate | date:'mediumDate' }}</td>
+        <td>{{ bill.supplierName }}</td>
+        <td>{{ bill.items.length }}</td>
+        <td>{{ bill.items | totalAmount }}</td>
+        <td>
+          <a [routerLink]="['/purchase/edit', bill.id]" class="btn btn-sm btn-secondary">Edit</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!loading && bills.length === 0 && !error" class="empty-state">
+    No purchase bills yet. <a routerLink="/purchase/new">Create one</a>.
+  </div>
+</div>
