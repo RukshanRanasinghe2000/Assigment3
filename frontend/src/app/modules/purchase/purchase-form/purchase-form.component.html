@@ -20,11 +20,13 @@
   <div *ngIf="loading" class="loading">Loading...</div>
 
   <div class="bill-layout" *ngIf="!loading">
-    <!-- Main content -->
     <div class="bill-main">
       <!-- Tabs -->
       <div class="tabs">
-        <button class="tab" [class.active]="activeTab==='header'" (click)="activeTab='header'" type="button">Header</button>
+        <button class="tab" [class.active]="activeTab==='header'" (click)="activeTab='header'" type="button">
+          Header
+          <span class="tab-error-dot" *ngIf="isInvalid('billNumber') || isInvalid('billDate') || isInvalid('supplierName')">●</span>
+        </button>
         <button class="tab" [class.active]="activeTab==='details'" (click)="activeTab='details'" type="button">Details</button>
       </div>
 
@@ -33,19 +35,24 @@
         <div *ngIf="activeTab==='header'" class="tab-content">
           <div class="form-grid">
             <div class="form-group">
-              <label>Bill Number *</label>
-              <input formControlName="billNumber" class="form-control" placeholder="e.g. PB-001" />
-              <span class="field-error" *ngIf="isInvalid('billNumber')">Required</span>
+              <label>Bill Number <span class="required-star">*</span></label>
+              <input formControlName="billNumber" class="form-control"
+                     [class.input-error]="isInvalid('billNumber')"
+                     placeholder="e.g. PB-001" />
+              <span class="field-error" *ngIf="isInvalid('billNumber')">Bill Number is required.</span>
             </div>
             <div class="form-group">
-              <label>Bill Date *</label>
-              <input type="date" formControlName="billDate" class="form-control" />
-              <span class="field-error" *ngIf="isInvalid('billDate')">Required</span>
+              <label>Bill Date <span class="required-star">*</span></label>
+              <input type="date" formControlName="billDate" class="form-control"
+                     [class.input-error]="isInvalid('billDate')" />
+              <span class="field-error" *ngIf="isInvalid('billDate')">Bill Date is required.</span>
             </div>
             <div class="form-group">
-              <label>Supplier Name *</label>
-              <input formControlName="supplierName" class="form-control" placeholder="Supplier name" />
-              <span class="field-error" *ngIf="isInvalid('supplierName')">Required</span>
+              <label>Supplier Name <span class="required-star">*</span></label>
+              <input formControlName="supplierName" class="form-control"
+                     [class.input-error]="isInvalid('supplierName')"
+                     placeholder="Supplier name" />
+              <span class="field-error" *ngIf="isInvalid('supplierName')">Supplier Name is required.</span>
             </div>
             <div class="form-group full-width">
               <label>Notes</label>
@@ -56,14 +63,13 @@
 
         <!-- Details Tab -->
         <div *ngIf="activeTab==='details'" class="tab-content">
-          <!-- Row entry -->
           <div formArrayName="items">
             <div class="items-header-row">
-              <span>Item</span>
-              <span>Batch/Location</span>
-              <span>Cost</span>
-              <span>Price</span>
-              <span>Qty</span>
+              <span>Item <span class="required-star">*</span></span>
+              <span>Location <span class="required-star">*</span></span>
+              <span>Cost <span class="required-star">*</span></span>
+              <span>Price <span class="required-star">*</span></span>
+              <span>Qty <span class="required-star">*</span></span>
               <span>Disc%</span>
               <span>Total Cost</span>
               <span>Total Selling</span>
@@ -71,37 +77,69 @@
             </div>
 
             <div *ngFor="let row of rowsArray.controls; let i = index"
-                 [formGroupName]="i" class="item-row">
-              <!-- Item autocomplete -->
-              <div class="autocomplete-wrap">
-                <input formControlName="itemSearch"
-                       class="form-control"
-                       placeholder="Search item..."
-                       (input)="onItemSearch(i, $any($event.target).value)"
-                       autocomplete="off" />
-                <div class="autocomplete-dropdown" *ngIf="(filteredItems[i]?.length ?? 0) > 0 && row.get('itemSearch')?.value">
-                  <div *ngFor="let item of filteredItems[i]"
-                       class="autocomplete-item"
-                       (click)="selectItem(i, item)">
-                    {{ item.name }}
+                 [formGroupName]="i" class="item-row-wrap">
+              <div class="item-row">
+                <!-- Item autocomplete -->
+                <div class="autocomplete-wrap">
+                  <input formControlName="itemSearch"
+                         class="form-control"
+                         [class.input-error]="isItemMissing(i)"
+                         placeholder="Search item..."
+                         (input)="onItemSearch(i, $any($event.target).value)"
+                         autocomplete="off" />
+                  <div class="autocomplete-dropdown"
+                       *ngIf="(filteredItems[i]?.length ?? 0) > 0 && row.get('itemSearch')?.value">
+                    <div *ngFor="let item of filteredItems[i]"
+                         class="autocomplete-item"
+                         (click)="selectItem(i, item)">
+                      {{ item.name }}
+                    </div>
                   </div>
                 </div>
+
+                <div class="field-wrap">
+                  <select formControlName="locationId" class="form-control"
+                          [class.input-error]="isLocationMissing(i)">
+                    <option [ngValue]="null" disabled>Select...</option>
+                    <option *ngFor="let loc of locations" [ngValue]="loc.id">{{ loc.name }}</option>
+                  </select>
+                </div>
+
+                <div class="field-wrap">
+                  <input type="number" formControlName="cost" class="form-control"
+                         [class.input-error]="isRowFieldInvalid(i, 'cost')"
+                         min="0" step="0.01" />
+                </div>
+
+                <div class="field-wrap">
+                  <input type="number" formControlName="price" class="form-control"
+                         [class.input-error]="isRowFieldInvalid(i, 'price')"
+                         min="0" step="0.01" />
+                </div>
+
+                <div class="field-wrap">
+                  <input type="number" formControlName="quantity" class="form-control"
+                         [class.input-error]="isRowFieldInvalid(i, 'quantity')"
+                         min="1" />
+                </div>
+
+                <input type="number" formControlName="discountPercent" class="form-control"
+                       min="0" max="100" step="0.01" />
+                <input formControlName="totalCost" class="form-control readonly" readonly />
+                <input formControlName="totalSelling" class="form-control readonly" readonly />
+
+                <button type="button" class="btn btn-danger btn-sm" (click)="removeRow(i)"
+                        [disabled]="rowsArray.length === 1">✕</button>
               </div>
 
-              <select formControlName="locationId" class="form-control">
-                <option [ngValue]="null" disabled>Select...</option>
-                <option *ngFor="let loc of locations" [ngValue]="loc.id">{{ loc.name }}</option>
-              </select>
-
-              <input type="number" formControlName="cost" class="form-control" min="0" step="0.01" />
-              <input type="number" formControlName="price" class="form-control" min="0" step="0.01" />
-              <input type="number" formControlName="quantity" class="form-control" min="1" />
-              <input type="number" formControlName="discountPercent" class="form-control" min="0" max="100" step="0.01" />
-              <input formControlName="totalCost" class="form-control readonly" readonly />
-              <input formControlName="totalSelling" class="form-control readonly" readonly />
-
-              <button type="button" class="btn btn-danger btn-sm" (click)="removeRow(i)"
-                      [disabled]="rowsArray.length === 1">✕</button>
+              <!-- Row-level inline errors -->
+              <div class="row-errors" *ngIf="isItemMissing(i) || isLocationMissing(i) || isRowFieldInvalid(i, 'cost') || isRowFieldInvalid(i, 'price') || isRowFieldInvalid(i, 'quantity')">
+                <span *ngIf="isItemMissing(i)">Item is required.</span>
+                <span *ngIf="isLocationMissing(i)">Location is required.</span>
+                <span *ngIf="isRowFieldInvalid(i, 'cost')">Cost must be 0 or more.</span>
+                <span *ngIf="isRowFieldInvalid(i, 'price')">Price must be 0 or more.</span>
+                <span *ngIf="isRowFieldInvalid(i, 'quantity')">Quantity must be at least 1.</span>
+              </div>
             </div>
           </div>
 

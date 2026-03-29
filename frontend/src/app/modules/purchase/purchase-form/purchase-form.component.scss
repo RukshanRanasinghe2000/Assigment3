@@ -7,6 +7,24 @@
   margin-bottom: 6px;
 }
 
+.item-row-wrap {
+  margin-bottom: 8px;
+}
+
+.row-errors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 2px 2px;
+  span {
+    font-size: 11px;
+    color: #dc2626;
+    background: #fee2e2;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+}
+
 .items-header-row {
   font-size: 12px;
   font-weight: 600;

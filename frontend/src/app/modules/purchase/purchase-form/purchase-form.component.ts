@@ -263,4 +263,19 @@ export class PurchaseFormComponent implements OnInit {
     const ctrl = this.form.get(path);
     return !!(ctrl?.invalid && ctrl?.touched);
   }
+
+  isRowFieldInvalid(rowIndex: number, field: string): boolean {
+    const ctrl = this.rowsArray.at(rowIndex)?.get(field);
+    return !!(ctrl?.invalid && ctrl?.touched);
+  }
+
+  isItemMissing(rowIndex: number): boolean {
+    const ctrl = this.rowsArray.at(rowIndex)?.get('itemId');
+    return !!(ctrl?.touched && !ctrl?.value);
+  }
+
+  isLocationMissing(rowIndex: number): boolean {
+    const ctrl = this.rowsArray.at(rowIndex)?.get('locationId');
+    return !!(ctrl?.touched && !ctrl?.value);
+  }
 }
