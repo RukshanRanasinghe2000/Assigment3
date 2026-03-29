@@ -5,34 +5,94 @@
   </div>
 
   <div *ngIf="loading" class="loading">Loading...</div>
-  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <div *ngIf="error" class="alert alert-error">
+    {{ error }}
+    <button class="btn btn-sm btn-outline" (click)="load()" style="margin-left:12px">Retry</button>
+  </div>
 
-  <table *ngIf="!loading && bills.length > 0" class="erp-table">
-    <thead>
-      <tr>
-        <th>Bill No</th>
-        <th>Date</th>
-        <th>Supplier</th>
-        <th>Items</th>
-        <th>Total Amount</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let bill of bills">
-        <td>{{ bill.billNumber }}</td>
-        <td>{{ bill.billDate | date:'mediumDate' }}</td>
-        <td>{{ bill.supplierName }}</td>
-        <td>{{ bill.items.length }}</td>
-        <td>{{ bill.items | totalAmount }}</td>
-        <td>
-          <a [routerLink]="['/purchase/edit', bill.id]" class="btn btn-sm btn-secondary">Edit</a>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <ng-container *ngIf="!loading && !error">
+    <table *ngIf="bills.length > 0" class="erp-table">
+      <thead>
+        <tr>
+          <th>Bill No</th>
+          <th>Date</th>
+          <th>Supplier</th>
+          <th>Items</th>
+          <th>Total Amount</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let bill of bills">
+          <td>{{ bill.billNumber }}</td>
+          <td>{{ bill.billDate | date:'mediumDate' }}</td>
+          <td>{{ bill.supplierName }}</td>
+          <td>{{ bill.items.length }}</td>
+          <td>{{ totalAmount(bill).toFixed(2) }}</td>
+          <td class="action-cell">
+            <button class="btn btn-sm btn-ghost" (click)="openView(bill)">View</button>
+            <a [routerLink]="['/purchase/edit', bill.id]" class="btn btn-sm btn-secondary">Edit</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-  <div *ngIf="!loading && bills.length === 0 && !error" class="empty-state">
-    No purchase bills yet. <a routerLink="/purchase/new">Create one</a>.
+    <div *ngIf="bills.length === 0" class="empty-state">
+      No purchase bills yet. <a routerLink="/purchase/new">Create one</a>.
+    </div>
+  </ng-container>
+</div>
+
+<!-- View Detail Modal -->
+<div class="modal-overlay" *ngIf="selectedBill" (click)="closeView()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Purchase Bill — {{ selectedBill.billNumber }}</h3>
+      <button class="btn btn-ghost btn-sm" (click)="closeView()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="detail-grid">
+        <div><span class="detail-label">Bill Number</span><span>{{ selectedBill.billNumber }}</span></div>
+        <div><span class="detail-label">Date</span><span>{{ selectedBill.billDate | date:'mediumDate' }}</span></div>
+        <div><span class="detail-label">Supplier</span><span>{{ selectedBill.supplierName }}</span></div>
+        <div *ngIf="selectedBill.notes"><span class="detail-label">Notes</span><span>{{ selectedBill.notes }}</span></div>
+        <div><span class="detail-label">Created</span><span>{{ selectedBill.createdAt | date:'medium' }}</span></div>
+        <div *ngIf="selectedBill.updatedAt"><span class="detail-label">Updated</span><span>{{ selectedBill.updatedAt | date:'medium' }}</span></div>
+      </div>
+
+      <table class="erp-table modal-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Location</th>
+            <th>Cost</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Disc%</th>
+            <th>Total Cost</th>
+            <th>Total Selling</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of selectedBill.items">
+            <td>{{ item.itemName }}</td>
+            <td>{{ item.locationName }}</td>
+            <td>{{ item.cost | number:'1.2-2' }}</td>
+            <td>{{ item.price | number:'1.2-2' }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.discountPercent | number:'1.2-2' }}</td>
+            <td>{{ item.totalCost | number:'1.2-2' }}</td>
+            <td>{{ item.totalSelling | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="modal-totals">
+        <span>Total Items: {{ selectedBill.items.length }}</span>
+        <span>Total Qty: {{ totalQty(selectedBill) }}</span>
+        <span class="modal-total-amount">Total Amount: {{ totalAmount(selectedBill).toFixed(2) }}</span>
+      </div>
+    </div>
   </div>
 </div>
