@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TotalAmountPipe } from '../../../shared/pipes/total-amount.pipe';
@@ -16,13 +16,22 @@ export class PurchaseListComponent implements OnInit {
   loading = false;
   error = '';
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loading = true;
     this.api.getPurchaseBills().subscribe({
-      next: data => { this.bills = data; this.loading = false; },
-      error: () => { this.error = 'Failed to load bills.'; this.loading = false; }
+      next: (data) => {
+        this.bills = Array.isArray(data) ? data : (data as any)?.value ?? [];
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[List] error:', err.status, err.statusText);
+        this.error = `Failed to load bills. ${err.status} ${err.statusText}`;
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 }

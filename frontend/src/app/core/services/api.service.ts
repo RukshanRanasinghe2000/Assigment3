@@ -7,7 +7,7 @@ import { AuditLog, PurchaseBill } from '../models/purchase-bill.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private base = 'http://localhost:5059/api';
+  private base = '/api';
 
   constructor(private http: HttpClient) {}
 

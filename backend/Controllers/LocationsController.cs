@@ -12,9 +12,9 @@ public class LocationsController : ControllerBase
     public LocationsController(ILocationRepository repo) => _repo = repo;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<List<LocationDto>>> GetAll()
     {
         var locations = await _repo.GetAllAsync();
-        return Ok(locations.Select(l => new LocationDto { Id = l.Id, Code = l.Code, Name = l.Name }));
+        return locations.Select(l => new LocationDto { Id = l.Id, Code = l.Code, Name = l.Name }).ToList();
     }
 }

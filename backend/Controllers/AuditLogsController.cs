@@ -12,10 +12,10 @@ public class AuditLogsController : ControllerBase
     public AuditLogsController(IAuditLogRepository repo) => _repo = repo;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<List<AuditLogDto>>> GetAll()
     {
         var logs = await _repo.GetAllAsync();
-        return Ok(logs.Select(l => new AuditLogDto
+        return logs.Select(l => new AuditLogDto
         {
             Id = l.Id,
             Entity = l.Entity,
@@ -23,6 +23,6 @@ public class AuditLogsController : ControllerBase
             OldValue = l.OldValue,
             NewValue = l.NewValue,
             CreatedAt = l.CreatedAt
-        }));
+        }).ToList();
     }
 }

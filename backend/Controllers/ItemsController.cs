@@ -12,9 +12,9 @@ public class ItemsController : ControllerBase
     public ItemsController(IItemRepository repo) => _repo = repo;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<List<ItemDto>>> GetAll()
     {
         var items = await _repo.GetAllAsync();
-        return Ok(items.Select(i => new ItemDto { Id = i.Id, Name = i.Name }));
+        return items.Select(i => new ItemDto { Id = i.Id, Name = i.Name }).ToList();
     }
 }
