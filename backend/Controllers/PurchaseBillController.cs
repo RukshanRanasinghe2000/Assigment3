@@ -11,14 +11,14 @@ public class PurchaseBillController : ControllerBase
     private readonly IPurchaseBillService _service;
     public PurchaseBillController(IPurchaseBillService service) => _service = service;
 
-    [HttpPost]
+    [HttpGet]
     public async Task<ActionResult<List<PurchaseBillDto>>> GetAll()
     {
         var result = await _service.GetAllAsync();
         return result.ToList();
     }
 
-    [HttpGet("{id}")]
+    [HttpPost("{id}")]
     public async Task<ActionResult<PurchaseBillDto>> GetById(int id)
     {
         var bill = await _service.GetByIdAsync(id);
