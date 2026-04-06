@@ -18,7 +18,7 @@ public class PurchaseBillController : ControllerBase
         return result.ToList();
     }
 
-    [HttpPost("{id}")]
+    [HttpGet("{id}")]
     public async Task<ActionResult<PurchaseBillDto>> GetById(int id)
     {
         var bill = await _service.GetByIdAsync(id);
