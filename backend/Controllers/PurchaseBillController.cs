@@ -11,7 +11,7 @@ public class PurchaseBillController : ControllerBase
     private readonly IPurchaseBillService _service;
     public PurchaseBillController(IPurchaseBillService service) => _service = service;
 
-    [HttpPost]
+    [HttpGet]
     public async Task<ActionResult<List<PurchaseBillDto>>> GetAll()
     {
         var result = await _service.GetAllAsync();
